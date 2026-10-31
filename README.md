@@ -1,5 +1,6 @@
 # webapp-e2e-tests
-End2End tests of the webapp
+
+End-to-end tests for the VoteEasy web application.
 
 # Installation instructions
 
@@ -79,7 +80,7 @@ The URL-parameter login test uses the configured regular account, with URL
 encoding for the parameter values. Negative tests intentionally retain invalid
 users/tokens, and tenant workflows create temporary accounts with their own
 test credentials. Cypress screenshots/videos and URLs may still contain
-sensitive data; do not publish artifacts without checking them.
+sensitive data; do not publish artefacts without checking them.
 
 Run the VoteEasy tests against the configured application:
 
