@@ -53,6 +53,48 @@ Create a `tsconfig.json` file.
    npx cypress open
    ```
 
+## Running a single test
+
+The application and local configuration must be prepared as described above.
+Use a dedicated test instance with a freshly initialised database for each run;
+database preparation is handled outside this project, not before each test.
+
+To run just one **spec file**, use `--spec`:
+
+```sh
+npx cypress run --spec "cypress/e2e/voteeasy/00login_logout_spec.ts"
+```
+
+This runs **all test cases in that file**, not just one test case.
+
+To run **exactly one test case**, temporarily add `.only` to a `describe`
+containing just that test. For example, in
+`cypress/e2e/voteeasy/00login_logout_spec.ts`, change the existing logout-message
+block to:
+
+```ts
+describe.only('VoteEasy Logout message', () => {
+    voteEasyIt('Show login page with success message after logout', ['app_url'], (env) => {
+        cy.visit(env.app_url + '/login?lang=de&success')
+        cy.get('.alert').contains('Sie haben sich erfolgreich abgemeldet')
+    })
+})
+```
+
+Then run the `--spec` command above. Only this test case runs; the other test
+cases in the file are skipped. If the chosen test belongs to a `describe` with
+multiple tests, temporarily wrap only its existing `voteEasyIt(...)` call in a
+new `describe.only(...)` block instead.
+
+The project helper `voteEasyIt` does not expose `.only`; use the enclosing
+`describe.only` rather than `voteEasyIt.only`. For tests declared directly with
+`it`, `it.only(...)` is also available.
+
+Remove `.only` and any temporary wrapper afterwards, and do not commit them.
+Keep `--spec` in the command: `.only` does not prevent other spec files from
+running. Tests that rely on data created by earlier tests may not work in
+isolation.
+
 ## Local VoteEasy configuration
 
 Copy the checked-in template once and enter your local application URL,
