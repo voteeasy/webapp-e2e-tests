@@ -74,3 +74,21 @@ npm run test:config
 The configuration regression tests use fake values and verify all nine specs,
 execution-time loading, required-key validation, password logging and URL
 encoding.
+
+## GitHub Actions
+
+The workflow in `.github/workflows/checks.yml` runs on pushes and pull requests
+and can also be started manually. It uses Node.js 24 and runs:
+
+- `npm ci` using the committed lockfile
+- `npm run typecheck`
+- `npm run test:config`
+- a whitespace check of the committed changes
+
+These checks do not require a running VoteEasy instance, a database,
+`cypress.env.json` or GitHub secrets. Cypress browser binary installation is
+skipped with `CYPRESS_INSTALL_BINARY=0`.
+
+This workflow checks the test project, not application behaviour. Full browser
+E2E tests still run separately against the local installation prepared by the
+external Docker setup.
