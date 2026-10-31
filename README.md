@@ -41,7 +41,7 @@ Create a `tsconfig.json` file.
    cp cypress.env.json.example cypress.env.json
    ```
 
-3. Run the tests from this project:
+3. Install Firefox locally, then run the tests from this project:
 
    ```sh
    npx cypress run
@@ -52,6 +52,15 @@ Create a `tsconfig.json` file.
    ```sh
    npx cypress open
    ```
+
+Firefox is the default browser, configured with `defaultBrowser: 'firefox'` in
+`cypress.config.ts`, for both `npx cypress run` and `npx cypress open`.
+Cypress does not install Firefox for you.
+To override the default for a run, pass an explicit browser:
+
+```sh
+npx cypress run --browser chrome
+```
 
 ## Running a single test
 
@@ -124,7 +133,7 @@ users/tokens, and tenant workflows create temporary accounts with their own
 test credentials. Cypress screenshots/videos and URLs may still contain
 sensitive data; do not publish artefacts without checking them.
 
-Run the VoteEasy tests against the configured application:
+Run the VoteEasy tests against the configured application using Firefox:
 
 ```sh
 npx cypress run
