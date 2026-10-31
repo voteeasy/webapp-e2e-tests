@@ -2,6 +2,7 @@ import { defineConfig } from 'cypress'
 
 export default defineConfig({
   projectId: '14eb45bb-bbc1-4aca-9714-0c6f910cc588',
+  defaultBrowser: 'firefox',
   video: true,
   watchForFileChanges: false,
   e2e: {
