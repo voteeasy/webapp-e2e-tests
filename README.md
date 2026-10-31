@@ -5,25 +5,52 @@ End2End tests of the webapp
 
 ## Get Cypress
 
-* npm install cypress --save-dev
-* npx cypress open
+```sh
+npm install cypress --save-dev
+npx cypress open
+```
 
-## Get Typescript support
+## Get TypeScript support
 
-* npm install typescript --save-dev
-* create tsconfig.json
+```sh
+npm install typescript --save-dev
+```
+
+Create a `tsconfig.json` file.
 
 # Running the tests
 
-1. Get a local VoteEasy instance running with the required roles and initial meetings, e.g.
-```sh
-./sh/cleanUpDBAndStartDocker.sh
-OR
-./mvnw -Pdevelopment spring-boot:run
-```
+1. Start a local VoteEasy instance with the required roles and initial meetings.
+   Run the appropriate command from the VoteEasy application project:
 
-2. Copy the checked-in template once and enter your local application URL, tenants and credentials.
-3. Run the tests with `npx cypress run` or `npx cypress open` for the GUI.
+   ```sh
+   ./sh/cleanUpDBAndStartDocker.sh
+   ```
+
+   Alternatively, if the fresh database has already been prepared:
+
+   ```sh
+   ./mvnw -Pdevelopment spring-boot:run
+   ```
+
+2. Copy the checked-in template once, then enter your local application URL,
+   tenants and credentials in `cypress.env.json`:
+
+   ```sh
+   cp cypress.env.json.example cypress.env.json
+   ```
+
+3. Run the tests from this project:
+
+   ```sh
+   npx cypress run
+   ```
+
+   Alternatively, open the Cypress GUI:
+
+   ```sh
+   npx cypress open
+   ```
 
 ## Local VoteEasy configuration
 
@@ -78,12 +105,16 @@ encoding.
 ## GitHub Actions
 
 The workflow in `.github/workflows/checks.yml` runs on pushes and pull requests
-and can also be started manually. It uses Node.js 24 and runs:
+and can also be started manually. It uses Node.js 24 and runs the following
+commands, with dependencies installed from the committed lockfile:
 
-- `npm ci` using the committed lockfile
-- `npm run typecheck`
-- `npm run test:config`
-- a whitespace check of the committed changes
+```sh
+npm ci
+npm run typecheck
+npm run test:config
+```
+
+It also checks committed changes for whitespace errors.
 
 These checks do not require a running VoteEasy instance, a database,
 `cypress.env.json` or GitHub secrets. Cypress browser binary installation is
