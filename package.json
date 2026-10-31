@@ -1,0 +1,11 @@
+{
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test:config": "node --test tests/voteeasy-env.test.cjs"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "cypress": "^16.2.1",
+    "typescript": "^7.0.2"
+  }
+}
