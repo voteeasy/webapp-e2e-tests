@@ -1,4 +1,11 @@
 {
+  "name": "voteeasy-webapp-e2e-tests",
+  "license": "AGPL-3.0-only",
+  "homepage": "https://voteeasy.aiki-it.de",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/voteeasy/webapp-e2e-tests.git"
+  },
   "scripts": {
     "typecheck": "tsc --noEmit",
     "test:config": "node --test tests/voteeasy-env.test.cjs"
