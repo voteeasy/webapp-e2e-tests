@@ -6,11 +6,18 @@ export default defineConfig({
   video: true,
   watchForFileChanges: false,
   e2e: {
-    // We've imported your old cypress plugins here.
-    // You may want to clean this up later by importing these.
-    // setupNodeEvents(on, config) {
-    //  return require('./cypress/plugins/index.js')(on, config)
-    //},
+    setupNodeEvents(_on, config) {
+      // Use Cypress's detected channels rather than assuming an OS-specific installation.
+      const hasFirefoxChannel = (channel: string) => config.browsers.some(
+        (browser) => browser.name === 'firefox' && browser.channel === channel,
+      )
+      if (config.defaultBrowser === 'firefox'
+        && !hasFirefoxChannel('stable') && hasFirefoxChannel('dev')) {
+        config.defaultBrowser = 'firefox:dev'
+      }
+      // Keep Firefox required if neither channel exists; explicit --browser still takes precedence.
+      return config
+    },
     specPattern: 'cypress/e2e/voteeasy/**/*.{js,jsx,ts,tsx}',
   },
 })

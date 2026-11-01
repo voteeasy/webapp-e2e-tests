@@ -53,10 +53,16 @@ Create a `tsconfig.json` file.
    npx cypress open
    ```
 
-Firefox is the default browser, configured with `defaultBrowser: 'firefox'` in
-`cypress.config.ts`, for both `npx cypress run` and `npx cypress open`.
-Cypress does not install Firefox for you.
-To override the default for a run, pass an explicit browser:
+Firefox is the default browser for both `npx cypress run` and `npx cypress open`.
+`cypress.config.ts` uses Cypress's detected browser list: it prefers stable
+Firefox (`firefox`) and automatically selects Firefox Developer Edition
+(`firefox:dev`) if only that channel is available, including on Linux. No
+OS-specific commands or configuration changes are needed.
+
+Cypress does not install Firefox for you. If neither channel is detected, the
+Firefox default remains in place and Cypress reports the missing browser rather
+than silently switching to another browser. To override the default for a run,
+pass an explicit browser (this takes precedence over the automatic default):
 
 ```sh
 npx cypress run --browser chrome
@@ -151,8 +157,8 @@ npm run test:config
 ```
 
 The configuration regression tests use fake values and verify all nine specs,
-execution-time loading, required-key validation, password logging and URL
-encoding.
+execution-time loading, required-key validation, password logging, URL
+encoding and automatic Firefox channel selection.
 
 ## GitHub Actions
 
