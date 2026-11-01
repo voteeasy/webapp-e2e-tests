@@ -43,7 +43,7 @@ describe('VoteEasy SelfService registration', () => {
         cy.get('#inlineRadio2').check()
         cy.get('#register').click()
         cy.get('#tenantname').invoke('prop', 'validationMessage')
-            .should('equal', 'Fülle dieses Feld aus.')
+            .should('equal', 'Please fill out this field.') // in Chrome: Fülle dieses Feld aus.
     })
 
     voteEasyIt('is unable to submit without correct Captcha clicked', ['app_url'], (env) => {
