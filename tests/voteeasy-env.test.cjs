@@ -17,16 +17,49 @@ execFileSync(path.join(root, 'node_modules', '.bin', 'tsc'), [
     '--moduleResolution', 'node16',
 ], { cwd: root, stdio: 'pipe' })
 
-function loadCypressConfig() {
+function loadCypressConfig({ existsSync = () => true, warn = () => {} } = {}) {
     const exports = {}
     const code = fs.readFileSync(path.join(output, 'cypress.config.js'), 'utf8')
-    const factory = new vm.Script(`(function(exports, require) { ${code}\n})`).runInNewContext()
+    const factory = new vm.Script(`(function(exports, require) { ${code}\n})`).runInNewContext({
+        console: { warn },
+    })
     factory(exports, (name) => {
+        if (name === 'node:fs') return { existsSync }
+        if (name === 'node:path') return path
         assert.equal(name, 'cypress')
         return { defineConfig: (config) => config }
     })
     return exports.default
 }
+
+test('Cypress warns about a missing local configuration without blocking startup', () => {
+    for (const fileExists of [false, true]) {
+        const warnings = []
+        const checkedPaths = []
+        const config = loadCypressConfig({
+            existsSync: (filePath) => {
+                checkedPaths.push(filePath)
+                return fileExists
+            },
+            warn: (message) => warnings.push(message),
+        })
+        const resolved = {
+            projectRoot: path.join(os.tmpdir(), 'fake-cypress-project'),
+            defaultBrowser: 'firefox',
+            browsers: [],
+        }
+        assert.equal(config.e2e.setupNodeEvents(() => {}, resolved), resolved)
+        assert.deepEqual(checkedPaths, [path.join(resolved.projectRoot, 'cypress.env.json')])
+        assert.equal(warnings.length, fileExists ? 0 : 1)
+        if (!fileExists) {
+            assert.match(warnings[0], /Warning: cypress\.env\.json is missing/)
+            assert.match(warnings[0], /A local configuration is required to run the VoteEasy tests/)
+            assert.match(warnings[0], /Create your own cypress\.env\.json/)
+            assert.match(warnings[0], /copying cypress\.env\.json\.example/)
+            assert.match(warnings[0], /before running the tests/)
+        }
+    }
+})
 
 test('Firefox selection prefers stable and falls back to the detected dev channel', () => {
     for (const [browsers, expected] of [
@@ -39,7 +72,7 @@ test('Firefox selection prefers stable and falls back to the detected dev channe
     ]) {
         const config = loadCypressConfig()
         assert.equal(config.defaultBrowser, 'firefox')
-        const resolved = { defaultBrowser: config.defaultBrowser, browsers }
+        const resolved = { projectRoot: '/fake-project', defaultBrowser: config.defaultBrowser, browsers }
         assert.equal(config.e2e.setupNodeEvents(() => {}, resolved), resolved)
         assert.equal(resolved.defaultBrowser, expected)
         assert.equal(resolved.browsers, browsers)
@@ -49,12 +82,13 @@ test('Firefox selection prefers stable and falls back to the detected dev channe
 test('Firefox fallback preserves alternative defaults and explicit browser selection', () => {
     const config = loadCypressConfig()
     for (const defaultBrowser of ['chrome', 'firefox:stable', 'firefox:nightly']) {
-        const resolved = { defaultBrowser, browsers: [{ name: 'firefox', channel: 'dev' }] }
+        const resolved = { projectRoot: '/fake-project', defaultBrowser, browsers: [{ name: 'firefox', channel: 'dev' }] }
         config.e2e.setupNodeEvents(() => {}, resolved)
         assert.equal(resolved.defaultBrowser, defaultBrowser)
     }
     const browser = { name: 'chrome', channel: 'stable' }
     const resolved = {
+        projectRoot: '/fake-project',
         defaultBrowser: 'firefox',
         browsers: [{ name: 'firefox', channel: 'dev' }, browser],
         browser,

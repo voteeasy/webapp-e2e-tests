@@ -119,6 +119,15 @@ tenants and credentials:
 cp cypress.env.json.example cypress.env.json
 ```
 
+A local configuration is required to run the VoteEasy tests. Create your own
+`cypress.env.json` from `cypress.env.json.example` and enter your local application
+URL, tenants and credentials before running the tests. Cypress displays a
+startup warning if the file is missing.
+
+The warning does not block startup. If you supply configuration entirely via
+environment variables or `--env`, the file can be omitted, but all required
+configuration values must still be provided.
+
 `cypress.env.json` is ignored by Git. Never commit real credentials to the
 example or `cypress.config.ts`. Cypress loads the local JSON file automatically;
 the VoteEasy tests read only their required values via `cy.env()` (Cypress 16)
@@ -158,7 +167,8 @@ npm run test:config
 
 The configuration regression tests use fake values and verify all nine specs,
 execution-time loading, required-key validation, password logging, URL
-encoding and automatic Firefox channel selection.
+encoding, the missing local configuration warning and automatic Firefox channel
+selection.
 
 ## GitHub Actions
 
