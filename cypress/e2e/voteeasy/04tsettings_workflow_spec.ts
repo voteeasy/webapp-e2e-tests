@@ -58,7 +58,7 @@ describe('VoteEasy Tenant-specific settings administration workflow as tenant ad
         cy.contains('Organisationseinstellungen')
         cy.contains('Spezifische Einstellungen')
         cy.contains('Derzeit gibt es keine spezifischen Einstellungen.')
-        // Organisation admins can view their settings, but cannot manage them.
+        // Organisation admins can view their settings, but mustn't manage them.
         cy.get('a[href*="/tsettings/properties/add/"]').should('not.exist')
         cy.get('#logout').click()
 
