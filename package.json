@@ -11,7 +11,7 @@
     "test:config": "node --test tests/voteeasy-env.test.cjs"
   },
   "devDependencies": {
-    "@types/node": "^26.6.6",
+    "@types/node": "^26.6.7",
     "cypress": "^16.3.0",
     "typescript": "^7.0.2"
   }
