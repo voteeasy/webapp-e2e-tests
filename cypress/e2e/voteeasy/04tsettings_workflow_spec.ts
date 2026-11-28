@@ -4,8 +4,7 @@ describe('VoteEasy Tenant-specific settings administration workflow as tenant ad
     // Test-specific tenant; these credentials are created by the test itself.
     const tenantPw = 'arealpasswordmaybemoresecure'.slice(0, 19)
     const tenantName = ('tsettings' + Date.now()).slice(0, 75)
-    const newPassword = ('pw' + Date.now()).slice(0, 19)
-    // Settings data for the not-yet-implemented settings checks
+    // Unique keys keep the checks scoped to this test's organisation.
     const adminSettingKey = ('AdminTenantsMustNotHaveSettings' + Date.now()).slice(0, 75)
     const uuidSetting = '79cedd94-a301-4a4b-a169-d34b4bb72f34'
     const uuidKey = ('tsettings.property.uuid' + tenantName).slice(0, 99)
@@ -59,22 +58,142 @@ describe('VoteEasy Tenant-specific settings administration workflow as tenant ad
         cy.contains('Organisationseinstellungen')
         cy.contains('Spezifische Einstellungen')
         cy.contains('Derzeit gibt es keine spezifischen Einstellungen.')
-        // no action can be taken here, therefore just checking for empty state
+        // Organisation admins can view their settings, but cannot manage them.
+        cy.get('a[href*="/tsettings/properties/add/"]').should('not.exist')
+        cy.get('#logout').click()
 
-        // 6. Switch to organisation admin area and create a particular setting
-        cy.visit(env.app_url + '/tsettings/tenant/?lang=de')
-            // select the currently created organisation
-            // hit the "Neue Einstellung" button to open the settings form
-            // URL contains /tsettings/properties/add
+        // 6. Manage settings as the superadmin, selecting only the intended tenant.
+        loginAsTenantAdmin()
+        const openSettingsForm = (name: string) => {
+            cy.visit(env.app_url + '/settings/tenant/?lang=de')
+            cy.get(`tr[data-cy="${name}"]`).within(() => {
+                cy.contains('button', 'Neue Einstellung').click()
+            })
+            cy.url().should('include', '/tsettings/properties/add/')
+            cy.get('input[name="tenantName"]').should('have.value', name)
+        }
+        const saveSetting = (key: string, value: string, type: string) => {
+            cy.get('#key').type(key).should('have.value', key)
+            cy.get('#value').type(value).should('have.value', value)
+            cy.get('#type').select(type)
+            cy.get('#scope').select('TENANT')
+            cy.get('input[type="submit"]').should('have.value', 'Einstellung abspeichern').click()
+            cy.url().should('include', '/settings/tenant/')
+        }
+        const openTenantSettings = () => {
+            cy.visit(env.app_url + '/settings/tenant/?lang=de')
+            cy.get(`tr[data-cy="${tenantName}"]`).within(() => {
+                cy.get('form[action*="/tsettings/properties/"]').not('[action*="/add/"]')
+                    .find('button').click()
+            })
+            cy.url().should('include', '/tsettings/properties/')
+        }
+        const settings = [
+            { key: uuidKey, value: uuidSetting, type: 'UUID', label: 'UUID' },
+            { key: numericKey, value: String(numericSetting), type: 'NUMERIC', label: 'numerisch' },
+            { key: alphanumericKey, value: alphanumericSetting, type: 'ALPHANUMERIC', label: 'alphanumerisch' },
+        ]
+        const verifySetting = (setting: typeof settings[number], readOnly = false) => {
+            cy.get(`tr[data-cy="${setting.key}"]`).within(() => {
+                cy.get('td').eq(0).should('have.text', setting.key)
+                cy.get('td').eq(1).should('have.text', setting.value)
+                // The read-only overview puts scope before datatype.
+                cy.get('td').eq(readOnly ? 3 : 2).should('have.text', setting.label)
+                cy.get('td').eq(readOnly ? 2 : 3).should('have.text', 'organisationsweit')
+            })
+        }
 
-            // "Einstellung abspeichern"
+        // The protected master organisation must reject settings, not just be empty.
+        openSettingsForm(env.tenant_admin_tenant_name)
+        saveSetting(adminSettingKey, 'not allowed', 'ALPHANUMERIC')
+        cy.contains('Diese Organisation ist geschützt. Operation nicht erlaubt.').should('be.visible')
 
+        settings.forEach((setting) => {
+            openSettingsForm(tenantName)
+            saveSetting(setting.key, setting.value, setting.type)
+            cy.contains('Die Einstellung wurde erfolgreich angelegt.').should('be.visible')
+        })
+        openTenantSettings()
+        cy.get('tbody tr[data-cy]').should('have.length', 3)
+        settings.forEach((setting) => verifySetting(setting))
 
+        // 7. Duplicate keys are case-insensitive and must not change existing values.
+        openSettingsForm(tenantName)
+        saveSetting(uuidKey.toUpperCase(), '84dbbe10-6119-4dbe-83c8-84d3aa36b24a', 'UUID')
+        cy.contains('Die Eigenschaft existiert bereits, bitte erst löschen und dann neu anlegen.').should('be.visible')
+        openTenantSettings()
+        cy.get('tbody tr[data-cy]').should('have.length', 3)
+        settings.forEach((setting) => verifySetting(setting))
 
+        // 8. Each test key is used by exactly one organisation.
+        cy.visit(env.app_url + '/tsettings/properties/keys?lang=de')
+        settings.forEach((setting) => {
+            cy.contains('tbody tr', setting.key).within(() => {
+                cy.get('td').eq(0).should('have.text', setting.key)
+                cy.get('td').eq(1).should('have.text', '1')
+                cy.get('td').eq(2).should('have.text', setting.label)
+                cy.get('td').eq(3).should('have.text', 'organisationsweit')
+            })
+        })
+        cy.contains('tbody tr', adminSettingKey.toLowerCase()).should('not.exist')
 
+        // 9. The organisation admin sees the values but no deletion controls.
+        cy.get('#logout').click()
+        login(env.app_url, tenantName, tenantName + '-admin', tenantPw)
+        cy.visit(env.app_url + '/tsettings/properties/?lang=de')
+        cy.get('tbody tr[data-cy]').should('have.length', 3)
+        settings.forEach((setting) => verifySetting(setting, true))
+        cy.contains('button', 'Einstellung löschen').should('not.exist')
 
+        // Create a regular user in this organisation to check access restrictions.
+        cy.visit(env.app_url + '/settings/invitation/?lang=de')
+        cy.get('span[data-cy="tkn"]').first().invoke('text').then((token) => {
+            cy.get('#logout').click()
+            cy.visit(env.app_url + '/register?lang=de')
+            cy.get('#token').type(token)
+            cy.get('#password').type(tenantPw, { log: false })
+            cy.get('#passwordAgain').type(tenantPw, { log: false }).blur()
+            cy.get('#register').should('not.be.disabled').click()
+            cy.contains('Dein Benutzerzugang wurde erfolgreich angelegt.').should('be.visible')
+            login(env.app_url, tenantName, token, tenantPw)
+            cy.get('#logout').should('be.visible')
+            cy.request({ url: env.app_url + '/tsettings/properties/', failOnStatusCode: false })
+                .its('status').should('eq', 403)
+            cy.visit(env.app_url + '/tsettings/properties/?lang=de', { failOnStatusCode: false })
+            cy.contains('Unauthorized/403').should('be.visible')
+            cy.get('tbody tr[data-cy]').should('not.exist')
+            cy.visit(env.app_url + '?lang=de')
+            cy.get('#logout').click()
+        })
+
+        // 10. Delete only the UUID setting and verify the remaining values and usage.
+        loginAsTenantAdmin()
+        openTenantSettings()
+        cy.get(`tr[data-cy="${uuidKey}"]`).within(() => {
+            cy.contains('button', 'Einstellung löschen').click()
+            cy.get('.modal').should('be.visible')
+            cy.contains('button', 'Ja, sofort löschen').click()
+        })
+        cy.contains('Die ausgewählte Einstellung wurde gelöscht.').should('be.visible')
+        cy.get(`tr[data-cy="${uuidKey}"]`).should('not.exist')
+        cy.get('tbody tr[data-cy]').should('have.length', 2)
+        settings.slice(1).forEach((setting) => verifySetting(setting))
+        cy.visit(env.app_url + '/tsettings/properties/keys?lang=de')
+        cy.contains('tbody tr', uuidKey).should('not.exist')
+        settings.slice(1).forEach((setting) => {
+            cy.contains('tbody tr', setting.key).find('td').eq(1).should('have.text', '1')
+        })
+
+        // 11. Remove only the organisation created by this test.
+        cy.visit(env.app_url + '/settings/tenant/?lang=de')
+        cy.get(`tr[data-cy="${tenantName}"]`).within(() => {
+            cy.get('button.btn-outline-danger').click()
+            cy.get('.modal').should('be.visible')
+            cy.contains('button', 'Ja, sofort löschen').click()
+        })
+        cy.contains('Die Organisation wurde unwiderbringlich entfernt.').should('be.visible')
+        cy.get(`tr[data-cy="${tenantName}"]`).should('not.exist')
+        cy.get('#logout').click()
+        cy.url().should('include', '/login')
     })
-    // TODO: create uuid, numeric and alphanumeric settings, verify duplicate
-    // keys and usage, delete uuid setting and check property count, then
-    // verify a regular user cannot access tenant settings.
 })

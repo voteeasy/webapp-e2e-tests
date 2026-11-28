@@ -7,11 +7,12 @@
 
 ## VoteEasy E2E Test Environment
 
-- The VoteEasy E2E tests always run against a freshly initialised database.
-- Database initialisation and resets are handled separately by a Docker setup, outside this test project.
-- A fresh database is a prerequisite for each test run, not a reset before each individual `it()` or spec file. Tests may modify data within a run.
+- VoteEasy E2E tests must be repeatable: both individual specs and the full suite must support multiple consecutive runs against an existing database state, without requiring a database reset between runs.
+- Database initialisation and resets are handled separately by a Docker setup, outside this test project. Tests must work both with a freshly initialised test database and with data left by earlier runs.
 - Do not introduce additional database resets, a seed API or Docker orchestration in this project without consultation.
-- Account for this prerequisite during reviews and changes: relying on initial data is not automatically an unintended dependency. Nevertheless, scope actions, particularly deletions, to the intended test records wherever possible.
+- Preserve the configured accounts and other baseline data required by subsequent runs. Do not assume that mutable application data is empty or unchanged from its initial state.
+- Use unique test records where appropriate, scope mutations and deletions to the intended test records, and provide cleanup that also handles failed or partially completed runs. Leftover test data must not prevent subsequent runs from succeeding.
+- When changing E2E tests, verify repeatability by running the affected specs multiple times consecutively against the same test database without resetting it. A single successful run is not sufficient evidence of repeatability.
 - Browser E2E tests create, modify and delete application data. Run them only against the test instance prepared for this purpose.
 
 ## Local Configuration

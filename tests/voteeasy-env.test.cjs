@@ -208,8 +208,9 @@ test('URL login checks the home path without requiring a language query paramete
     }
 })
 
-test('both tenant workflows log out and verify login with the changed password', () => {
-    for (const spec of ['03tenant_admin_spec.js', '04tsettings_workflow_spec.js']) {
+test('tenant administration logs out and verifies login with the changed password', () => {
+    // The settings workflow no longer changes passwords or deactivates tenants.
+    for (const spec of ['03tenant_admin_spec.js']) {
         const h = harness({
             app_url: 'http://fake.invalid',
             tenant_admin_tenant: 'fake-master-tenant',
